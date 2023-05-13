@@ -1,0 +1,4 @@
+<launch>
+    <node pkg ="evaluate" type="evaluate" name="my_node" output="screen">
+    </node>
+</launch>
