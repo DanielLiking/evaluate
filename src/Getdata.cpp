@@ -6,8 +6,35 @@
 #include <nav_msgs/OccupancyGrid.h>
 #include <std_msgs/Float32.h>
 
+
 nav_msgs::OccupancyGridConstPtr grid_map_msg;
 ros::Publisher result_pub;
+double calculateMatchingDegree(const std::vector<signed char>& grid_data, int grid_width, int grid_height, const std::vector<std::vector<int>>& point_cloud) 
+{
+  int totalPoints = 0;
+  int matchedPoints = 0;
+
+  for (int i = 0; i < grid_height; i++) 
+  {
+    for (int j = 0; j < grid_width; j++) 
+    {
+      int index = i * grid_width + j;
+      if (index < 0 || index >= grid_data.size()) continue;
+
+      // 根据栅格地图的值和点云数据的值进行匹配程度判断
+      if (grid_data[index] >= 0 && point_cloud[i][j] > 0) 
+      {
+        matchedPoints++;
+      }
+      totalPoints++;
+    }
+  }
+
+  // 计算匹配程度
+  double matchingDegree = static_cast<double>(matchedPoints) / totalPoints;
+
+  return matchingDegree;
+}
 void grid_map_callback(const nav_msgs::OccupancyGridConstPtr& msg) 
 {
   grid_map_msg = msg;
@@ -63,29 +90,41 @@ void pointcloud_callback(const sensor_msgs::PointCloud2ConstPtr& cloud_msg)
       if (index < 0 || index > size) continue;
       grid_array[i][j] = grid_data[index];
     }
-
+ 
     }
   for (const auto& point : cloud->points) 
   {
+      int value = 255;
       int x = (point.x - grid_origin_x) / (grid_resolution);
       int y = (point.y - grid_origin_y) / (grid_resolution);
-      if(x < 0 || x >= grid_width || y < 0 ||y >= grid_height) continue;
-      point_cloud[x][y] = 255;
-  } 
-  std::ofstream outfile;
-  outfile.open("/home/tjark/array.txt");
-  for(int i=0; i<grid_height; i++) 
-  {
-      for(int j=0; j<grid_width; j++) 
+      if(x < 0 || x >= grid_width || y < 0 ||y >= grid_height) 
       {
-          outfile << grid_array[i][j]<< " ";
+        continue;
       }
-      outfile << "\n";
-  }
+      point_cloud[y][x] = value;
+  } 
+  //进行匹配程度评估
+  double matchingDegree = calculateMatchingDegree(grid_data, grid_width, grid_height, point_cloud);
+  std_msgs::Float32 result;
+  result.data = matchingDegree;
 
-  // 关闭文件
-  outfile.close();
-  grid_data.clear();
+    // 发布评估结果
+    result_pub.publish(result);
+
+  // std::ofstream outfile;
+  // outfile.open("/home/tjark/array.txt");
+  // for(int i=0; i<grid_height; i++) 
+  // {
+  //     for(int j=0; j<grid_width; j++) 
+  //     {
+  //         outfile << grid_array[i][j]<< " ";
+  //     }
+  //     outfile << "\n";
+  // }
+
+  // // 关闭文件
+  // outfile.close();
+  
 }
 }
 

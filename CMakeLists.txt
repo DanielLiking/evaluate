@@ -40,8 +40,8 @@ include_directories(
 
 
 
-add_executable(evaluate src/Getdata.cpp)
-target_link_libraries(evaluate
+add_executable(demo src/demo.cpp)
+target_link_libraries(demo
    ${catkin_LIBRARIES}
    ${PCL_LIBRARIES}
    )
